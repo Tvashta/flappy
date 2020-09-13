@@ -28,3 +28,8 @@ function Bird:update(dt)
         end
     end
 end
+
+function Bird:collides(pipe)
+    return self.x  + self.width - 4 >= pipe.x and self.x + 2 <= pipe.x + pipe.width and
+            self.y + self.height- 4 >= pipe.y and self.y + 2 <= pipe.y + pipe.height
+end

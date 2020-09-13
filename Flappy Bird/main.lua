@@ -2,6 +2,7 @@ push = require 'push'
 Class = require 'class'
 require 'Bird'
 require 'Pipe'
+require 'PipePair'
 
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
@@ -24,6 +25,9 @@ love.keyboard.keysPressed = {}
 
 local pipes = {}
 local pipeTimer = 0
+local prevY = -PIPE_HEIGHT + math.random(80) +20
+
+local isScrolling = true
 
 function love.load()
     love.graphics.setDefaultFilter('nearest','nearest')
@@ -51,24 +55,40 @@ function love.keyboard.isPressed(key)
     return love.keyboard.keysPressed[key]
 end
 
-function love.update(dt) 
-    bgScroll = ( bgScroll + BG_SPEED * dt )%413
-    gdScroll = ( gdScroll + GD_SPEED * dt )%VIRTUAL_WIDTH
-    
-    bird:update(dt)
-    love.keyboard.keysPressed = {}
-    
-    pipeTimer = pipeTimer + dt
-    if pipeTimer > 2 then
-        table.insert(pipes, Pipe())
-        pipeTimer = 0
-    end
-    for k,pipe in pairs(pipes) do
-        pipe:update(dt)
-        if pipe.x < -pipe.width then
-            table.remove(pipes, k)
+function love.update(dt)
+    isScrolling = bird.y >0 and bird.y<VIRTUAL_HEIGHT-bird.height - 5 and isScrolling
+    if isScrolling then
+        bgScroll = ( bgScroll + BG_SPEED * dt )%413
+        gdScroll = ( gdScroll + GD_SPEED * dt )%VIRTUAL_WIDTH
+        
+        bird:update(dt)
+        
+
+        pipeTimer = pipeTimer + dt
+        if pipeTimer > 2 then
+            local y = math.max(-PIPE_HEIGHT+10, math.min(prevY + math.random(-20,20), VIRTUAL_HEIGHT - 90 - PIPE_HEIGHT))
+            prevY = y
+            table.insert(pipes, PipePair(y))
+            pipeTimer = 0
+        end
+
+        for k,pipe in pairs(pipes) do
+            pipe:update(dt)
+            for l, onePipe in pairs(pipe.pipes) do
+                if bird:collides(onePipe) then
+                    isScrolling =false
+                end
+            end 
+        end
+
+        for k, pipe in pairs(pipes) do
+            if pipe.remove then
+                table.remove(pipes, k)
+            end
         end
     end
+    love.keyboard.keysPressed = {}
+
 end
 
 function love.draw()
